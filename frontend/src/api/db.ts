@@ -110,3 +110,38 @@ export async function deleteWeekPlan(
     .match({ week_id: weekId, person_name: personName, day_of_week: dayOfWeek })
   return { error: error?.message ?? null }
 }
+
+// ---------------------------------------------------------------------------
+// Additional queries for Dashboard / DayEditor
+// ---------------------------------------------------------------------------
+
+/** Get a single day's plan for a specific person */
+export async function getWeekPlanDay(
+  weekId: string,
+  personName: string,
+  dayOfWeek: number,
+): Promise<{ data: WeekPlanRow | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from('week_plans')
+    .select('*')
+    .eq('week_id', weekId)
+    .eq('person_name', personName)
+    .eq('day_of_week', dayOfWeek)
+    .maybeSingle()
+  if (error) return { data: null, error: error.message }
+  return { data: data as WeekPlanRow | null, error: null }
+}
+
+/** Get ALL persons' week data for a given week (for the dashboard overview) */
+export async function getAllPersonsWeekData(
+  weekId: string,
+): Promise<{ data: WeekPlanRow[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from('week_plans')
+    .select('*')
+    .eq('week_id', weekId)
+    .order('person_name')
+    .order('day_of_week')
+  if (error) return { data: [], error: error.message }
+  return { data: data as WeekPlanRow[], error: null }
+}
