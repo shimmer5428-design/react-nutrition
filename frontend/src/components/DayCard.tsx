@@ -10,14 +10,18 @@ interface Props {
   onEdit: () => void
 }
 
+// bar fill class: matches Streamlit palette
+function barClass(status: string) {
+  return status === 'met' ? 'bar-met' : status === 'deficit' ? 'bar-under' : 'bar-over'
+}
+
 function ProgressBar({ actual, target, status }: { actual: number; target: number; status: string }) {
   const pct = target > 0 ? Math.min((actual / target) * 100, 100) : 0
-  const barColor = status === 'met' ? '#22c55e' : status === 'deficit' ? '#ef4444' : '#f97316'
   return (
     <div className="macro-progress-bar-bg">
       <div
-        className="macro-progress-bar-fill"
-        style={{ width: `${pct}%`, backgroundColor: barColor }}
+        className={`macro-progress-bar-fill ${barClass(status)}`}
+        style={{ width: `${pct}%` }}
       />
     </div>
   )
@@ -27,8 +31,13 @@ export default function DayCard({ person, dayOfWeek, summary, onEdit }: Props) {
   const status = getDayStatus(summary)
   const exerciseDay = isExerciseDay(person, dayOfWeek)
 
-  const cardBg =
-    status === 'met' ? '#166534' : status === 'deficit' ? '#991b1b' : '#9a3412'
+  // card bg class mirrors Streamlit: deficit=#FF6163, met=#A4CA68, exceeded=#a677c6
+  const cardClass =
+    status === 'met'
+      ? 'day-card day-card-met-bg'
+      : status === 'exceeded'
+      ? 'day-card day-card-exceeded-bg'
+      : 'day-card day-card-deficit-bg'
 
   const proteinStatus = getMacroStatus(summary.actual_protein, summary.target_protein)
   const carbsStatus = getMacroStatus(summary.actual_carbs, summary.target_carbs)
@@ -37,14 +46,15 @@ export default function DayCard({ person, dayOfWeek, summary, onEdit }: Props) {
   const formatDelta = (v: number) => (v >= 0 ? `+${v}` : `${v}`)
 
   return (
-    <div className="day-card" style={{ backgroundColor: cardBg }}>
+    <div className={cardClass}>
       <div className="day-card-header">
         <span className="day-card-day-name">
           {DAY_NAMES[dayOfWeek]}{exerciseDay ? ' \uD83C\uDFC6' : ''}
         </span>
       </div>
 
-      <div className="day-card-kcal" style={{ color: exerciseDay ? '#fde047' : '#ffffff' }}>
+      {/* exercise day kcal in yellow (#ECF29D), otherwise dark */}
+      <div className={`day-card-kcal${exerciseDay ? ' exercise' : ''}`}>
         {summary.actual_kcal} / {summary.target_kcal} kcal
       </div>
       <div className="day-card-deficit">
