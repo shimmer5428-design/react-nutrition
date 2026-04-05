@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../api/supabase'
-import { FoodItem, FoodRow, FOOD_CATEGORIES } from '../api/types'
+import { getFoods, upsertFood, deleteFood as deleteFoodApi } from '../api/db'
+import { FoodItem, FOOD_CATEGORIES } from '../api/types'
 import FoodTable from '../components/FoodTable'
 
 const EMPTY_FOOD: FoodItem = {
@@ -23,14 +23,11 @@ export default function FoodsPage() {
 
   async function load() {
     setLoading(true)
-    const { data, error: err } = await supabase
-      .from('custom_foods')
-      .select('*')
-      .order('name')
+    const { data, error: err } = await getFoods()
     if (err) {
-      setError(err.message)
+      setError(err)
     } else {
-      setFoods((data as FoodRow[]).map((r) => r.data))
+      setFoods(data)
     }
     setLoading(false)
   }
@@ -44,11 +41,9 @@ export default function FoodsPage() {
       setError('Food name is required')
       return
     }
-    const { error: err } = await supabase
-      .from('custom_foods')
-      .upsert({ name: form.name, data: form }, { onConflict: 'name' })
+    const { error: err } = await upsertFood(form.name, form)
     if (err) {
-      setError(err.message)
+      setError(err)
     } else {
       setSuccess(`Saved "${form.name}"`)
       setForm({ ...EMPTY_FOOD })
@@ -58,12 +53,9 @@ export default function FoodsPage() {
 
   async function handleDelete(name: string) {
     if (!confirm(`Delete food "${name}"?`)) return
-    const { error: err } = await supabase
-      .from('custom_foods')
-      .delete()
-      .eq('name', name)
+    const { error: err } = await deleteFoodApi(name)
     if (err) {
-      setError(err.message)
+      setError(err)
     } else {
       setSuccess(`Deleted "${name}"`)
       load()

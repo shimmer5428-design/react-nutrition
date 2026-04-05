@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../api/supabase'
-import { Person, PersonRow } from '../api/types'
+import { getPersons, upsertPerson, deletePerson as deletePersonApi } from '../api/db'
+import { Person } from '../api/types'
 
 const EMPTY_PERSON: Person = {
   name: '',
@@ -24,14 +24,11 @@ export default function PersonsPage() {
 
   async function load() {
     setLoading(true)
-    const { data, error: err } = await supabase
-      .from('persons')
-      .select('*')
-      .order('name')
+    const { data, error: err } = await getPersons()
     if (err) {
-      setError(err.message)
+      setError(err)
     } else {
-      setPersons((data as PersonRow[]).map((r) => r.data))
+      setPersons(data)
     }
     setLoading(false)
   }
@@ -45,11 +42,9 @@ export default function PersonsPage() {
       setError('Name is required')
       return
     }
-    const { error: err } = await supabase
-      .from('persons')
-      .upsert({ name: form.name, data: form }, { onConflict: 'name' })
+    const { error: err } = await upsertPerson(form.name, form)
     if (err) {
-      setError(err.message)
+      setError(err)
     } else {
       setSuccess(`Saved "${form.name}"`)
       setForm({ ...EMPTY_PERSON })
@@ -59,12 +54,9 @@ export default function PersonsPage() {
 
   async function handleDelete(name: string) {
     if (!confirm(`Delete person "${name}"?`)) return
-    const { error: err } = await supabase
-      .from('persons')
-      .delete()
-      .eq('name', name)
+    const { error: err } = await deletePersonApi(name)
     if (err) {
-      setError(err.message)
+      setError(err)
     } else {
       setSuccess(`Deleted "${name}"`)
       load()

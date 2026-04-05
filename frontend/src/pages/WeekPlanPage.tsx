@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
-import { supabase } from '../api/supabase'
-import { Person, PersonRow, DayPlan, FoodItem, FoodRow, WeekPlanRow, MEAL_TYPES, FOOD_CATEGORIES } from '../api/types'
+import { getPersons, getFoods, getWeekPlans, upsertWeekPlanBatch } from '../api/db'
+import { Person, DayPlan, FoodItem, MEAL_TYPES } from '../api/types'
 import PersonSelector from '../components/PersonSelector'
 import WeekPlanGrid from '../components/WeekPlanGrid'
 
@@ -40,12 +40,14 @@ export default function WeekPlanPage() {
 
   useEffect(() => {
     async function loadPersons() {
-      const { data } = await supabase.from('persons').select('*').order('name')
-      if (data) setPersons((data as PersonRow[]).map((r) => r.data))
+      const { data, error: err } = await getPersons()
+      if (err) { setError(err); return }
+      setPersons(data)
     }
     async function loadFoods() {
-      const { data } = await supabase.from('custom_foods').select('*').order('name')
-      if (data) setFoods((data as FoodRow[]).map((r) => r.data))
+      const { data, error: err } = await getFoods()
+      if (err) { setError(err); return }
+      setFoods(data)
     }
     loadPersons()
     loadFoods()
@@ -55,20 +57,14 @@ export default function WeekPlanPage() {
     if (!selectedPerson) return
     setLoading(true)
     setError(null)
-    const { data, error: err } = await supabase
-      .from('week_plans')
-      .select('*')
-      .eq('week_id', weekId)
-      .eq('person_name', selectedPerson)
-      .order('day_of_week')
+    const { data: rows, error: err } = await getWeekPlans(selectedPerson, weekId)
 
     if (err) {
-      setError(err.message)
+      setError(err)
       setLoading(false)
       return
     }
 
-    const rows = data as WeekPlanRow[]
     if (rows.length === 0) {
       setDays(emptyDays(selectedPerson))
     } else {
@@ -99,12 +95,10 @@ export default function WeekPlanPage() {
       data: day,
     }))
 
-    const { error: err } = await supabase
-      .from('week_plans')
-      .upsert(rows, { onConflict: 'week_id,person_name,day_of_week' })
+    const { error: err } = await upsertWeekPlanBatch(rows)
 
     if (err) {
-      setError(err.message)
+      setError(err)
     } else {
       setSuccess('Week plan saved!')
     }
