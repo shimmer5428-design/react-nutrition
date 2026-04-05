@@ -19,6 +19,63 @@ interface Props {
   onAddItem: (item: FoodItem) => void
 }
 
+interface ItemRowProps {
+  idx: number
+  name: string
+  amount: number
+  unit: string
+  protein: number
+  carbs: number
+  fat: number
+  calories: number
+  onUpdate: (idx: number, val: number) => void
+  onRemove: (idx: number) => void
+}
+
+function ItemRow({ idx, name, amount, unit, protein, carbs, fat, calories, onUpdate, onRemove }: ItemRowProps) {
+  const [draft, setDraft] = useState(String(amount))
+
+  // sync external amount changes (e.g. after save)
+  const displayVal = draft
+
+  function commit() {
+    const parsed = parseFloat(draft)
+    if (!isNaN(parsed) && parsed > 0) {
+      onUpdate(idx, parsed)
+    } else {
+      setDraft(String(amount)) // revert
+    }
+  }
+
+  return (
+    <tr>
+      <td>{name}</td>
+      <td>
+        <div className="meal-item-qty">
+          <input
+            type="number"
+            className="qty-input"
+            min="0.1"
+            step="0.1"
+            value={displayVal}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur() } }}
+          />
+          <span className="qty-unit">{unit}</span>
+        </div>
+      </td>
+      <td>{protein}</td>
+      <td>{carbs}</td>
+      <td>{fat}</td>
+      <td>{Math.round(calories)}</td>
+      <td>
+        <button className="qty-btn delete-btn" onClick={() => onRemove(idx)}>×</button>
+      </td>
+    </tr>
+  )
+}
+
 export default function MealSection({
   mealLabel,
   meal,
@@ -57,52 +114,24 @@ export default function MealSection({
                   <th>澱粉(g)</th>
                   <th>脂肪(g)</th>
                   <th>熱量</th>
-                  <th>操作</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item, idx) => (
-                  <tr key={idx}>
-                    <td>{item.name}</td>
-                    <td>
-                      <div className="meal-item-qty">
-                        <button
-                          className="qty-btn"
-                          onClick={() => {
-                            if (item.amount > 1) {
-                              onUpdateItemAmount(idx, item.amount - 1)
-                            }
-                          }}
-                        >
-                          -
-                        </button>
-                        <span>{item.amount} {item.unit}</span>
-                        <button
-                          className="qty-btn"
-                          onClick={() => onUpdateItemAmount(idx, item.amount + 1)}
-                        >
-                          +
-                        </button>
-                        <button
-                          className="qty-btn update-btn"
-                          onClick={() => onUpdateItemAmount(idx, item.amount)}
-                        >
-                          更新
-                        </button>
-                        <button
-                          className="qty-btn delete-btn"
-                          onClick={() => onRemoveItem(idx)}
-                        >
-                          x
-                        </button>
-                      </div>
-                    </td>
-                    <td>{item.protein_g}</td>
-                    <td>{item.carbs_g}</td>
-                    <td>{item.fat_g}</td>
-                    <td>{Math.round(item.calories)}</td>
-                    <td></td>
-                  </tr>
+                  <ItemRow
+                    key={idx}
+                    idx={idx}
+                    name={item.name}
+                    amount={item.amount}
+                    unit={item.unit}
+                    protein={item.protein_g}
+                    carbs={item.carbs_g}
+                    fat={item.fat_g}
+                    calories={item.calories}
+                    onUpdate={onUpdateItemAmount}
+                    onRemove={onRemoveItem}
+                  />
                 ))}
               </tbody>
             </table>
