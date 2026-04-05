@@ -11,9 +11,11 @@ const EMPTY_PERSON: Person = {
   activity_level: 'moderate',
   calorie_plan: 'maintain',
   exercise_days: [],
-  exercise_bonus: 0.10,
+  exercise_bonus: 0.05,
   tdee_manual: null,
 }
+
+const DAY_LABELS = ['週一', '週二', '週三', '週四', '週五', '週六', '週日']
 
 export default function PersonsPage() {
   const [persons, setPersons] = useState<Person[]>([])
@@ -125,11 +127,43 @@ export default function PersonsPage() {
             </select>
           </div>
           <div className="form-group">
-            <label>TDEE (manual)</label>
+            <label>TDEE (手動填入，留空自動計算)</label>
             <input type="number" value={form.tdee_manual ?? ''} onChange={(e) => setForm({ ...form, tdee_manual: e.target.value ? +e.target.value : null })} />
           </div>
+          <div className="form-group">
+            <label>運動日熱量加成 (%)</label>
+            <input
+              type="number"
+              min="0"
+              max="50"
+              step="1"
+              value={Math.round((form.exercise_bonus ?? 0.05) * 100)}
+              onChange={(e) => setForm({ ...form, exercise_bonus: (e.target.value ? +e.target.value : 5) / 100 })}
+            />
+          </div>
         </div>
-        <button className="primary" onClick={handleSave}>Save Person</button>
+        <div className="form-row">
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label>運動日（勾選）</label>
+            <div className="exercise-days-checkboxes">
+              {DAY_LABELS.map((label, idx) => (
+                <label key={idx} className="exercise-day-check">
+                  <input
+                    type="checkbox"
+                    checked={(form.exercise_days ?? []).includes(idx)}
+                    onChange={(e) => {
+                      const days = new Set(form.exercise_days ?? [])
+                      e.target.checked ? days.add(idx) : days.delete(idx)
+                      setForm({ ...form, exercise_days: Array.from(days).sort() })
+                    }}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <button className="primary" onClick={handleSave}>儲存</button>
       </div>
 
       {loading ? (

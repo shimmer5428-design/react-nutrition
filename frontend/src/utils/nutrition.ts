@@ -64,7 +64,7 @@ export function isExerciseDay(person: Person, dayOfWeek: number): boolean {
 export function getDayTDEE(person: Person, dayOfWeek: number): number {
   const base = getBaseTDEE(person)
   if (isExerciseDay(person, dayOfWeek)) {
-    return Math.round(base * (1 + (person.exercise_bonus ?? 0)))
+    return Math.round(base * (1 + (person.exercise_bonus ?? 0.05)))
   }
   return base
 }
@@ -88,11 +88,10 @@ export interface MacroTargets {
 
 export function getMacroTargets(person: Person, dayOfWeek: number): MacroTargets {
   const total_kcal = getTargetCalories(person, dayOfWeek)
-  const protein_g = Math.round(person.weight_kg * 2)
+  // Fixed ratio: protein 20% / fat 30% / carbs 50%
+  const protein_g = Math.round((total_kcal * 0.20) / 4)
   const fat_g = Math.round((total_kcal * 0.30) / 9)
-  const protein_kcal = protein_g * 4
-  const fat_kcal = fat_g * 9
-  const carbs_g = Math.round(Math.max(0, total_kcal - protein_kcal - fat_kcal) / 4)
+  const carbs_g = Math.round((total_kcal * 0.50) / 4)
   return { protein_g, carbs_g, fat_g, total_kcal }
 }
 

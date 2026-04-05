@@ -175,6 +175,23 @@ input:focus, select:focus {
   color: #666;
 }
 
+.exercise-days-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 4px;
+}
+
+.exercise-day-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #333;
+  cursor: pointer;
+}
+
 /* ===================================================================
    Cards / Status
    =================================================================== */
