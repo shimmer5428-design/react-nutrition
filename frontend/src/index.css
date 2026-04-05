@@ -509,6 +509,21 @@ input:focus, select:focus {
   background: #E55C50;
 }
 
+.topbar-save-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.save-status {
+  font-size: 12px;
+  font-weight: 500;
+}
+.save-status-idle { color: transparent; }
+.save-status-dirty { color: #E55C50; }
+.save-status-saving { color: #aaa; }
+.save-status-saved { color: #5a9c2f; }
+
 .day-editor-title {
   margin-bottom: 16px;
   font-size: 22px;

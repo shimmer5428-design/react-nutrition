@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPersons, getFoods, getWeekPlans, upsertWeekPlan, getAllPersonsWeekData } from '../api/db'
 import type { Person, DayPlan, FoodItem, Meal, WeekPlanRow } from '../api/types'
@@ -47,8 +47,10 @@ export default function DayEditorPage() {
   const [personWeekData, setPersonWeekData] = useState<WeekPlanRow[]>([])
   const [allWeekData, setAllWeekData] = useState<WeekPlanRow[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'dirty' | 'saving' | 'saved'>('idle')
   const [loading, setLoading] = useState(true)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latestDayPlan = useRef(dayPlan)
 
   const load = useCallback(async () => {
     if (!weekId || !personName) return
@@ -76,27 +78,40 @@ export default function DayEditorPage() {
     setAllWeekData(allRes.data)
 
     const dayRow = planRes.data.find((r) => r.day_of_week === dayOfWeek)
-    if (dayRow) {
-      setDayPlan(dayRow.data)
-    } else {
-      setDayPlan(emptyDayPlan(personName, dayOfWeek))
-    }
+    const loaded = dayRow ? dayRow.data : emptyDayPlan(personName, dayOfWeek)
+    setDayPlan(loaded)
+    latestDayPlan.current = loaded
+    setSaveStatus('idle')
 
     setLoading(false)
   }, [weekId, personName, dayOfWeek])
 
   useEffect(() => { load() }, [load])
 
-  async function handleSave() {
+  async function doSave(plan: DayPlan) {
     if (!weekId || !personName) return
     setError(null)
-    setSuccess(null)
-    const { error: err } = await upsertWeekPlan(weekId, personName, dayOfWeek, dayPlan)
+    setSaveStatus('saving')
+    const { error: err } = await upsertWeekPlan(weekId, personName, dayOfWeek, plan)
     if (err) {
       setError(err)
+      setSaveStatus('dirty')
     } else {
-      setSuccess('已儲存！')
+      setSaveStatus('saved')
     }
+  }
+
+  async function handleSave() {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    await doSave(latestDayPlan.current)
+  }
+
+  function scheduleAutoSave() {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    setSaveStatus('dirty')
+    autoSaveTimer.current = setTimeout(() => {
+      doSave(latestDayPlan.current)
+    }, 2000)
   }
 
   function updateMealItems(mealType: string, updater: (items: FoodItem[]) => FoodItem[]) {
@@ -105,8 +120,11 @@ export default function DayEditorPage() {
       const meal = meals[mealType] ? { ...meals[mealType] } : { meal_type: mealType, items: [] }
       meal.items = updater([...meal.items])
       meals[mealType] = meal
-      return { ...prev, meals }
+      const next = { ...prev, meals }
+      latestDayPlan.current = next
+      return next
     })
+    scheduleAutoSave()
   }
 
   function handleUpdateItemAmount(mealType: string, itemIndex: number, newAmount: number) {
@@ -171,14 +189,18 @@ export default function DayEditorPage() {
         <button onClick={() => navigate('/')}>
           &larr; 返回總覽
         </button>
-        <button className="primary" onClick={handleSave}>儲存</button>
+        <div className="topbar-save-group">
+          <span className={`save-status save-status-${saveStatus}`}>
+            {saveStatus === 'dirty' ? '未儲存' : saveStatus === 'saving' ? '儲存中...' : saveStatus === 'saved' ? '已儲存 ✓' : ''}
+          </span>
+          <button className="primary" onClick={handleSave}>立即儲存</button>
+        </div>
       </div>
 
       {error && <div className="status error">{error}</div>}
-      {success && <div className="status success">{success}</div>}
 
       <h1 className="day-editor-title">
-        {personName} -- {DAY_NAMES[dayOfWeek]}{exerciseDay ? ` \uD83C\uDFC6（${exerciseLabel}）` : ''}
+        {personName} -- {DAY_NAMES[dayOfWeek]}{exerciseDay ? ` \uD83C\uDFC3（${exerciseLabel}）` : ''}
       </h1>
 
       {/* 4-column stats */}
