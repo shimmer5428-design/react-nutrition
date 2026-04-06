@@ -206,20 +206,20 @@ export default function DayEditorPage() {
       {/* 4-column stats */}
       <div className="day-editor-stats">
         <div className="stat-card">
-          <div className="stat-label">目標熱量</div>
-          <div className="stat-value">{macros.total_kcal} kcal</div>
+          <div className="stat-label">熱量</div>
+          <div className="stat-value">{summary.actual_kcal} / {macros.total_kcal} kcal</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">蛋白質目標</div>
-          <div className="stat-value">{macros.protein_g}g</div>
+          <div className="stat-label">蛋白質</div>
+          <div className="stat-value">{summary.actual_protein}g / {macros.protein_g}g</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">澱粉目標</div>
-          <div className="stat-value">{macros.carbs_g}g</div>
+          <div className="stat-label">澱粉</div>
+          <div className="stat-value">{summary.actual_carbs}g / {macros.carbs_g}g</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">脂肪目標</div>
-          <div className="stat-value">{macros.fat_g}g</div>
+          <div className="stat-label">脂肪</div>
+          <div className="stat-value">{summary.actual_fat}g / {macros.fat_g}g</div>
         </div>
       </div>
 
