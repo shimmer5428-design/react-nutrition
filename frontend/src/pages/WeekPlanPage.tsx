@@ -5,11 +5,13 @@ import PersonSelector from '../components/PersonSelector'
 import WeekPlanGrid from '../components/WeekPlanGrid'
 
 function currentWeekId(): string {
-  const now = new Date()
-  const jan1 = new Date(now.getFullYear(), 0, 1)
-  const days = Math.floor((now.getTime() - jan1.getTime()) / 86400000)
-  const week = Math.ceil((days + jan1.getDay() + 1) / 7)
-  return `${now.getFullYear()}-W${String(week).padStart(2, '0')}`
+  // ISO 8601: week 1 = week containing first Thursday; weeks start on Monday
+  const d = new Date()
+  d.setUTCHours(0, 0, 0, 0)
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)) // shift to Thursday of this week
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
 }
 
 function emptyDays(personName: string): DayPlan[] {
