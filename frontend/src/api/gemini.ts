@@ -15,7 +15,7 @@ export async function analyzeFood(
   if (!apiKey) throw new Error('未設定 VITE_GEMINI_API_KEY')
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parts: any[] = [
