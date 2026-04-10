@@ -102,7 +102,7 @@ export default function DashboardPage() {
       {loading ? (
         <p>載入中...</p>
       ) : persons.length === 0 ? (
-        <p>尚無人員資料。請先至「Persons」頁面新增。</p>
+        <p>尚無人員資料。請先至「Family Members」頁面新增。</p>
       ) : (
         <div className="dashboard-persons">
           {persons.map((person) => {

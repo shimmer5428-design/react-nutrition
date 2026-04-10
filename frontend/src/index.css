@@ -929,3 +929,118 @@ input:focus, select:focus {
   color: #E55C50;
   font-weight: 700;
 }
+
+/* ===================================================================
+   AI 外食分析 Tab
+   =================================================================== */
+
+.ai-analyze-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-desc-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #FFE0DB;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  background: white;
+  color: #1E1E1E;
+}
+
+.ai-desc-input:focus {
+  outline: none;
+  border-color: #FF6163;
+}
+
+.ai-image-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-upload-btn {
+  padding: 6px 14px;
+  border: 1px dashed #FF6163;
+  border-radius: 6px;
+  background: white;
+  color: #FF6163;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ai-upload-btn:hover:not(:disabled) {
+  background: #FFF0EE;
+}
+
+.ai-upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-clear-img-btn {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ai-image-preview {
+  max-width: 200px;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #FFE0DB;
+}
+
+.ai-analyze-btn {
+  align-self: flex-start;
+}
+
+.ai-error {
+  color: #E55C50;
+  font-size: 13px;
+  padding: 6px 10px;
+  background: #FFF0EE;
+  border-radius: 6px;
+  border: 1px solid #FFE0DB;
+}
+
+.ai-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid #FFE0DB;
+}
+
+.ai-results-hint {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.ai-result-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: #333;
+  padding: 4px 0;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.ai-result-item input[type="checkbox"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: #FF6163;
+}

@@ -13,7 +13,7 @@ function App() {
           總覽
         </NavLink>
         <NavLink to="/persons" className={({ isActive }) => isActive ? 'active' : ''}>
-          Persons
+          Family Members
         </NavLink>
         <NavLink to="/foods" className={({ isActive }) => isActive ? 'active' : ''}>
           Foods

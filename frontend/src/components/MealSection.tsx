@@ -14,6 +14,7 @@ interface Props {
   /** All persons' meals for this day (for family tab) */
   familyDayMeals: { personName: string; meals: Record<string, Meal> }[]
   currentPersonName: string
+  currentDayOfWeek: number
   onUpdateItemAmount: (itemIndex: number, newAmount: number) => void
   onRemoveItem: (itemIndex: number) => void
   onAddItem: (item: FoodItem) => void
@@ -84,6 +85,7 @@ export default function MealSection({
   personWeekMeals,
   familyDayMeals,
   currentPersonName,
+  currentDayOfWeek,
   onUpdateItemAmount,
   onRemoveItem,
   onAddItem,
@@ -160,6 +162,7 @@ export default function MealSection({
               personWeekMeals={personWeekMeals}
               familyDayMeals={familyDayMeals}
               currentPersonName={currentPersonName}
+              currentDayOfWeek={currentDayOfWeek}
               mealType={meal.meal_type}
               onAdd={(item) => {
                 onAddItem(item)

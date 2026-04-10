@@ -55,7 +55,7 @@ export default function PersonsPage() {
   }
 
   async function handleDelete(name: string) {
-    if (!confirm(`Delete person "${name}"?`)) return
+    if (!confirm(`Delete family member "${name}"?`)) return
     const { error: err } = await deletePersonApi(name)
     if (err) {
       setError(err)
@@ -73,13 +73,13 @@ export default function PersonsPage() {
 
   return (
     <div>
-      <h1>Persons</h1>
+      <h1>Family Members</h1>
 
       {error && <div className="status error">{error}</div>}
       {success && <div className="status success">{success}</div>}
 
       <div className="card">
-        <h2>{form.name && persons.some(p => p.name === form.name) ? 'Edit' : 'Add'} Person</h2>
+        <h2>{form.name && persons.some(p => p.name === form.name) ? 'Edit' : 'Add'} Family Member</h2>
         <div className="form-row">
           <div className="form-group">
             <label>Name</label>

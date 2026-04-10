@@ -254,6 +254,7 @@ export default function DayEditorPage() {
               personWeekMeals={personWeekMeals}
               familyDayMeals={familyDayMeals}
               currentPersonName={personName}
+              currentDayOfWeek={dayOfWeek}
               onUpdateItemAmount={(itemIdx, newAmount) => handleUpdateItemAmount(key, itemIdx, newAmount)}
               onRemoveItem={(itemIdx) => handleRemoveItem(key, itemIdx)}
               onAddItem={(item) => handleAddItem(key, item)}

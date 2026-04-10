@@ -49,7 +49,7 @@ export default function DayCard({ person, dayOfWeek, summary, onEdit }: Props) {
     <div className={cardClass}>
       <div className="day-card-header">
         <span className="day-card-day-name">
-          {DAY_NAMES[dayOfWeek]}{exerciseDay ? ' \uD83C\uDFC6' : ''}
+          {DAY_NAMES[dayOfWeek]}{exerciseDay ? ' \uD83C\uDFC3' : ''}
         </span>
       </div>
 
@@ -62,24 +62,20 @@ export default function DayCard({ person, dayOfWeek, summary, onEdit }: Props) {
       </div>
 
       <div className="day-card-macros">
-        <div className="day-card-macro-row">
-          <span className="day-card-macro-label">蛋白</span>
-          <span className="day-card-macro-value">{summary.actual_protein}g</span>
-          <ProgressBar actual={summary.actual_protein} target={summary.target_protein} status={proteinStatus} />
-          <span className="day-card-macro-delta">{formatDelta(summary.protein_delta)}g</span>
-        </div>
-        <div className="day-card-macro-row">
-          <span className="day-card-macro-label">澱粉</span>
-          <span className="day-card-macro-value">{summary.actual_carbs}g</span>
-          <ProgressBar actual={summary.actual_carbs} target={summary.target_carbs} status={carbsStatus} />
-          <span className="day-card-macro-delta">{formatDelta(summary.carbs_delta)}g</span>
-        </div>
-        <div className="day-card-macro-row">
-          <span className="day-card-macro-label">脂肪</span>
-          <span className="day-card-macro-value">{summary.actual_fat}g</span>
-          <ProgressBar actual={summary.actual_fat} target={summary.target_fat} status={fatStatus} />
-          <span className="day-card-macro-delta">{formatDelta(summary.fat_delta)}g</span>
-        </div>
+        {([
+          { label: '蛋白', actual: summary.actual_protein, target: summary.target_protein, delta: summary.protein_delta, st: proteinStatus },
+          { label: '澱粉', actual: summary.actual_carbs,   target: summary.target_carbs,   delta: summary.carbs_delta,   st: carbsStatus },
+          { label: '脂肪', actual: summary.actual_fat,     target: summary.target_fat,     delta: summary.fat_delta,     st: fatStatus },
+        ] as const).map(({ label, actual, delta, target, st }) => (
+          <div key={label} className="day-card-macro-block">
+            <div className="day-card-macro-top">
+              <span className="day-card-macro-label">{label}</span>
+              <span className="day-card-macro-value">{actual}g</span>
+              <span className="day-card-macro-delta">{formatDelta(delta)}g</span>
+            </div>
+            <ProgressBar actual={actual} target={target} status={st} />
+          </div>
+        ))}
       </div>
 
       <button className="day-card-edit-btn" onClick={onEdit}>
