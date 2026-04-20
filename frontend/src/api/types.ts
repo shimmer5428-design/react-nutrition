@@ -19,6 +19,7 @@ export interface Meal {
 export interface DayPlan {
   person_name: string
   day_of_week: number // 0=Mon ... 6=Sun
+  exercise_kcal_burned?: number
   meals: Record<string, Meal>
 }
 

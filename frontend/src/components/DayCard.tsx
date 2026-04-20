@@ -1,10 +1,10 @@
 import { DAY_NAMES } from '../api/types'
-import type { Person } from '../api/types'
+import type { DayPlan } from '../api/types'
 import type { DaySummary } from '../utils/nutrition'
 import { getDayStatus, getMacroStatus, isExerciseDay } from '../utils/nutrition'
 
 interface Props {
-  person: Person
+  dayPlan: DayPlan
   dayOfWeek: number
   summary: DaySummary
   onEdit: () => void
@@ -27,9 +27,9 @@ function ProgressBar({ actual, target, status }: { actual: number; target: numbe
   )
 }
 
-export default function DayCard({ person, dayOfWeek, summary, onEdit }: Props) {
+export default function DayCard({ dayPlan, dayOfWeek, summary, onEdit }: Props) {
   const status = getDayStatus(summary)
-  const exerciseDay = isExerciseDay(person, dayOfWeek)
+  const exerciseDay = isExerciseDay(dayPlan)
 
   // card bg class mirrors Streamlit: deficit=#FF6163, met=#A4CA68, exceeded=#a677c6
   const cardClass =

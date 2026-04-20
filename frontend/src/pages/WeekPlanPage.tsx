@@ -18,6 +18,7 @@ function emptyDays(personName: string): DayPlan[] {
   return Array.from({ length: 7 }, (_, i) => ({
     person_name: personName,
     day_of_week: i,
+    exercise_kcal_burned: 0,
     meals: Object.fromEntries(
       MEAL_TYPES.map(([key]) => [key, { meal_type: key, items: [] }])
     ),
@@ -73,7 +74,10 @@ export default function WeekPlanPage() {
       const loaded = emptyDays(selectedPerson)
       for (const row of rows) {
         if (row.day_of_week >= 0 && row.day_of_week < 7) {
-          loaded[row.day_of_week] = row.data
+          loaded[row.day_of_week] = {
+            ...row.data,
+            exercise_kcal_burned: Math.max(0, row.data.exercise_kcal_burned ?? 0),
+          }
         }
       }
       setDays(loaded)

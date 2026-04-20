@@ -7,6 +7,7 @@ import {
   getMacroTargets,
   getMealTargetCalories,
   getDaySummary,
+  getExerciseMacroBonus,
   isExerciseDay,
   getExerciseDayLabel,
 } from '../utils/nutrition'
@@ -16,6 +17,7 @@ function emptyDayPlan(personName: string, dayOfWeek: number): DayPlan {
   return {
     person_name: personName,
     day_of_week: dayOfWeek,
+    exercise_kcal_burned: 0,
     meals: Object.fromEntries(
       MEAL_TYPES.map(([key]) => [key, { meal_type: key, items: [] }])
     ),
@@ -78,7 +80,9 @@ export default function DayEditorPage() {
     setAllWeekData(allRes.data)
 
     const dayRow = planRes.data.find((r) => r.day_of_week === dayOfWeek)
-    const loaded = dayRow ? dayRow.data : emptyDayPlan(personName, dayOfWeek)
+    const loaded = dayRow
+      ? { ...dayRow.data, exercise_kcal_burned: Math.max(0, dayRow.data.exercise_kcal_burned ?? 0) }
+      : emptyDayPlan(personName, dayOfWeek)
     setDayPlan(loaded)
     latestDayPlan.current = loaded
     setSaveStatus('idle')
@@ -154,13 +158,25 @@ export default function DayEditorPage() {
     updateMealItems(mealType, (items) => [...items, item])
   }
 
+  function handleExerciseChange(nextValue: number) {
+    const exerciseKcal = Math.max(0, Math.round(nextValue))
+    setDayPlan((prev) => {
+      const next = { ...prev, exercise_kcal_burned: exerciseKcal }
+      latestDayPlan.current = next
+      return next
+    })
+    scheduleAutoSave()
+  }
+
   if (loading) return <p>載入中...</p>
   if (!person) return <p>{error ?? '找不到人員資料'}</p>
 
-  const macros = getMacroTargets(person, dayOfWeek)
-  const summary = getDaySummary(person, dayPlan, dayOfWeek)
-  const exerciseDay = isExerciseDay(person, dayOfWeek)
-  const exerciseLabel = getExerciseDayLabel(person, dayOfWeek)
+  const macros = getMacroTargets(person, dayPlan)
+  const summary = getDaySummary(person, dayPlan)
+  const exerciseDay = isExerciseDay(dayPlan)
+  const exerciseLabel = getExerciseDayLabel(dayPlan)
+  const exerciseBonus = getExerciseMacroBonus(dayPlan)
+  const exerciseKcal = dayPlan.exercise_kcal_burned ?? 0
 
   // Build person week meals for history tab: dayOfWeek -> mealType -> Meal
   const personWeekMeals: Record<number, Record<string, Meal>> = {}
@@ -202,6 +218,24 @@ export default function DayEditorPage() {
       <h1 className="day-editor-title">
         {personName} -- {DAY_NAMES[dayOfWeek]}{exerciseDay ? ` \uD83C\uDFC3（${exerciseLabel}）` : ''}
       </h1>
+
+      <div className="day-editor-exercise card">
+        <div className="day-editor-exercise-input">
+          <div className="form-group">
+            <label>今日運動消耗（kcal）</label>
+            <input
+              type="number"
+              min="0"
+              step="10"
+              value={exerciseKcal}
+              onChange={(e) => handleExerciseChange(e.target.value ? +e.target.value : 0)}
+            />
+          </div>
+        </div>
+        <div className="day-editor-exercise-summary">
+          額外加入：{exerciseBonus.total_kcal} kcal {'->'} 蛋白 {exerciseBonus.protein_g}g / 澱粉 {exerciseBonus.carbs_g}g / 脂肪 {exerciseBonus.fat_g}g
+        </div>
+      </div>
 
       {/* 4-column stats */}
       <div className="day-editor-stats">
@@ -249,7 +283,7 @@ export default function DayEditorPage() {
               mealType={key}
               mealLabel={label}
               meal={dayPlan.meals[key] ?? { meal_type: key, items: [] }}
-              suggestedKcal={getMealTargetCalories(person, dayOfWeek, key)}
+              suggestedKcal={getMealTargetCalories(person, dayPlan, key)}
               customFoods={customFoods}
               personWeekMeals={personWeekMeals}
               familyDayMeals={familyDayMeals}

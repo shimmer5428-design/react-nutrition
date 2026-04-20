@@ -20,6 +20,7 @@ function emptyDayPlan(personName: string, dayOfWeek: number): DayPlan {
   return {
     person_name: personName,
     day_of_week: dayOfWeek,
+    exercise_kcal_burned: 0,
     meals: Object.fromEntries(
       MEAL_TYPES.map(([key]) => [key, { meal_type: key, items: [] }])
     ),
@@ -113,11 +114,11 @@ export default function DashboardPage() {
                 <div className="dashboard-days-grid">
                   {DAY_NAMES.map((_, dayIdx) => {
                     const dayPlan = personPlans[dayIdx] ?? emptyDayPlan(person.name, dayIdx)
-                    const summary = getDaySummary(person, dayPlan, dayIdx)
+                    const summary = getDaySummary(person, dayPlan)
                     return (
                       <DayCard
                         key={dayIdx}
-                        person={person}
+                        dayPlan={dayPlan}
                         dayOfWeek={dayIdx}
                         summary={summary}
                         onEdit={() => navigate(`/edit/${weekId}/${encodeURIComponent(person.name)}/${dayIdx}`)}

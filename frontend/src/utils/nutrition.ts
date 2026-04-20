@@ -57,22 +57,37 @@ export function getBaseTDEE(person: Person): number {
   return Math.round(bmr * multiplier)
 }
 
-export function isExerciseDay(person: Person, dayOfWeek: number): boolean {
-  return (person.exercise_days ?? []).includes(dayOfWeek)
+export function getExerciseCalories(dayPlan?: Pick<DayPlan, 'exercise_kcal_burned'> | null): number {
+  const value = dayPlan?.exercise_kcal_burned ?? 0
+  return Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0
 }
 
-export function getDayTDEE(person: Person, dayOfWeek: number): number {
-  const base = getBaseTDEE(person)
-  if (isExerciseDay(person, dayOfWeek)) {
-    return Math.round(base * (1 + (person.exercise_bonus ?? 0.05)))
-  }
-  return base
+export function isExerciseDay(dayPlan?: Pick<DayPlan, 'exercise_kcal_burned'> | null): boolean {
+  return getExerciseCalories(dayPlan) > 0
 }
 
-export function getTargetCalories(person: Person, dayOfWeek: number): number {
-  const tdee = getDayTDEE(person, dayOfWeek)
+export function getExerciseMacroBonus(dayPlan?: Pick<DayPlan, 'exercise_kcal_burned'> | null): MacroTargets {
+  const total_kcal = getExerciseCalories(dayPlan)
+  const protein_g = Math.round((total_kcal * 0.20) / 4)
+  const fat_g = Math.round((total_kcal * 0.30) / 9)
+  const carbs_g = Math.round((total_kcal * 0.50) / 4)
+  return { protein_g, carbs_g, fat_g, total_kcal }
+}
+
+export function getExerciseDayLabel(dayPlan?: Pick<DayPlan, 'exercise_kcal_burned'> | null): string {
+  const kcal = getExerciseCalories(dayPlan)
+  if (kcal <= 0) return ''
+  return `運動日 +${kcal} kcal`
+}
+
+export function getBaseTargetCalories(person: Person): number {
+  const tdee = getBaseTDEE(person)
   const planMultiplier = PLAN_MULTIPLIERS[person.calorie_plan ?? 'maintain'] ?? 1.0
   return Math.round(tdee * planMultiplier)
+}
+
+export function getTargetCalories(person: Person, dayPlan?: Pick<DayPlan, 'exercise_kcal_burned'> | null): number {
+  return getBaseTargetCalories(person) + getExerciseCalories(dayPlan)
 }
 
 // ---------------------------------------------------------------------------
@@ -86,17 +101,17 @@ export interface MacroTargets {
   total_kcal: number
 }
 
-export function getMacroTargets(person: Person, dayOfWeek: number): MacroTargets {
-  const total_kcal = getTargetCalories(person, dayOfWeek)
-  // Fixed ratio: protein 20% / fat 30% / carbs 50%
-  const protein_g = Math.round((total_kcal * 0.20) / 4)
-  const fat_g = Math.round((total_kcal * 0.30) / 9)
-  const carbs_g = Math.round((total_kcal * 0.50) / 4)
-  return { protein_g, carbs_g, fat_g, total_kcal }
+export function getMacroTargets(person: Person, dayPlan?: Pick<DayPlan, 'exercise_kcal_burned'> | null): MacroTargets {
+  const base_kcal = getBaseTargetCalories(person)
+  const exerciseBonus = getExerciseMacroBonus(dayPlan)
+  const protein_g = Math.round((base_kcal * 0.20) / 4) + exerciseBonus.protein_g
+  const fat_g = Math.round((base_kcal * 0.30) / 9) + exerciseBonus.fat_g
+  const carbs_g = Math.round((base_kcal * 0.50) / 4) + exerciseBonus.carbs_g
+  return { protein_g, carbs_g, fat_g, total_kcal: base_kcal + exerciseBonus.total_kcal }
 }
 
-export function getMealTargetCalories(person: Person, dayOfWeek: number, mealType: string): number {
-  const total = getTargetCalories(person, dayOfWeek)
+export function getMealTargetCalories(person: Person, dayPlan: Pick<DayPlan, 'exercise_kcal_burned'> | null, mealType: string): number {
+  const total = getTargetCalories(person, dayPlan)
   const ratio = MEAL_CALORIE_RATIO[mealType] ?? 0
   return Math.round(total * ratio)
 }
@@ -131,8 +146,8 @@ export function mealItemTotals(items: FoodItem[]): { protein: number; carbs: num
   }
 }
 
-export function getDaySummary(person: Person, dayPlan: DayPlan, dayOfWeek: number): DaySummary {
-  const targets = getMacroTargets(person, dayOfWeek)
+export function getDaySummary(person: Person, dayPlan: DayPlan): DaySummary {
+  const targets = getMacroTargets(person, dayPlan)
 
   let actual_kcal = 0
   let actual_protein = 0
@@ -183,14 +198,6 @@ export function getDayStatus(summary: DaySummary): DayStatus {
   if (ratio < 0.95) return 'deficit'
   if (ratio > 1.05) return 'exceeded'
   return 'met'
-}
-
-export function getExerciseDayLabel(person: Person, dayOfWeek: number): string {
-  if (!isExerciseDay(person, dayOfWeek)) return ''
-  const bonus = person.exercise_bonus ?? 0
-  if (bonus >= 0.2) return '高強度運動日'
-  if (bonus >= 0.1) return '中強度運動日'
-  return '輕度運動日'
 }
 
 export function getMacroStatus(actual: number, target: number): DayStatus {
