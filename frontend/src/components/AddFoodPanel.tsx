@@ -1,16 +1,15 @@
 import { useRef, useState } from 'react'
-import type { FoodItem, Meal } from '../api/types'
+import type { FoodItem, Meal, MealHistorySource } from '../api/types'
 import { BUILTIN_FOODS, CATEGORY_LABELS, getFoodsByCategory } from '../api/foodDatabase'
 import { analyzeFood } from '../api/gemini'
 
 interface Props {
   customFoods: FoodItem[]
-  /** personWeekMeals: dayOfWeek -> mealType -> Meal */
-  personWeekMeals: Record<number, Record<string, Meal>>
+  /** Ordered previous-day meal sources */
+  historyMealSources: MealHistorySource[]
   /** familyDayMeals: other persons' meals for same day */
   familyDayMeals: { personName: string; meals: Record<string, Meal> }[]
   currentPersonName: string
-  currentDayOfWeek: number
   mealType: string
   onAdd: (item: FoodItem) => void
 }
@@ -39,10 +38,9 @@ function scaleFood(food: FoodItem, qty: number): FoodItem {
 
 export default function AddFoodPanel({
   customFoods,
-  personWeekMeals,
+  historyMealSources,
   familyDayMeals,
   currentPersonName,
-  currentDayOfWeek,
   mealType,
   onAdd,
 }: Props) {
@@ -76,11 +74,8 @@ export default function AddFoodPanel({
   // History: collect unique foods from same meal type, past 3 days only
   const historyFoods: FoodItem[] = []
   const seenHistory = new Set<string>()
-  const pastThreeDays = [currentDayOfWeek - 1, currentDayOfWeek - 2, currentDayOfWeek - 3].filter(d => d >= 0)
-  for (const day of pastThreeDays) {
-    const dayMeals = personWeekMeals[day]
-    if (!dayMeals) continue
-    const meal = dayMeals[mealType]
+  for (const source of historyMealSources) {
+    const meal = source.meals[mealType]
     if (!meal) continue
     for (const item of meal.items) {
       if (!seenHistory.has(item.name)) {

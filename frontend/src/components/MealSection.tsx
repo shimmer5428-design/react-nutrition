@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { FoodItem, Meal } from '../api/types'
+import { useEffect, useRef, useState } from 'react'
+import type { FoodItem, Meal, MealHistorySource } from '../api/types'
 import { mealItemTotals } from '../utils/nutrition'
 import AddFoodPanel from './AddFoodPanel'
 
@@ -9,12 +9,11 @@ interface Props {
   meal: Meal
   suggestedKcal: number
   customFoods: FoodItem[]
-  /** All day plans for this person this week (for history tab) */
-  personWeekMeals: Record<number, Record<string, Meal>>
+  /** Ordered previous-day meal sources for the history tab */
+  historyMealSources: MealHistorySource[]
   /** All persons' meals for this day (for family tab) */
   familyDayMeals: { personName: string; meals: Record<string, Meal> }[]
   currentPersonName: string
-  currentDayOfWeek: number
   onUpdateItemAmount: (itemIndex: number, newAmount: number) => void
   onRemoveItem: (itemIndex: number) => void
   onAddItem: (item: FoodItem) => void
@@ -36,8 +35,9 @@ interface ItemRowProps {
 function ItemRow({ idx, name, amount, unit, protein, carbs, fat, calories, onUpdate, onRemove }: ItemRowProps) {
   const [draft, setDraft] = useState(String(amount))
 
-  // sync external amount changes (e.g. after save)
-  const displayVal = draft
+  useEffect(() => {
+    setDraft(String(amount))
+  }, [amount])
 
   function commit() {
     const parsed = parseFloat(draft)
@@ -58,7 +58,7 @@ function ItemRow({ idx, name, amount, unit, protein, carbs, fat, calories, onUpd
             className="qty-input"
             min="0.1"
             step="0.1"
-            value={displayVal}
+            value={draft}
             onChange={e => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur() } }}
@@ -82,18 +82,28 @@ export default function MealSection({
   meal,
   suggestedKcal,
   customFoods,
-  personWeekMeals,
+  historyMealSources,
   familyDayMeals,
   currentPersonName,
-  currentDayOfWeek,
   onUpdateItemAmount,
   onRemoveItem,
   onAddItem,
 }: Props) {
   const [expanded, setExpanded] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
+  const rowKeyCounter = useRef(0)
+  const rowKeys = useRef(new WeakMap<FoodItem, string>())
   const items = meal.items
   const totals = mealItemTotals(items)
+
+  function getRowKey(item: FoodItem) {
+    const existing = rowKeys.current.get(item)
+    if (existing) return existing
+    const next = `meal-item-${rowKeyCounter.current}`
+    rowKeyCounter.current += 1
+    rowKeys.current.set(item, next)
+    return next
+  }
 
   return (
     <div className="meal-accordion">
@@ -122,7 +132,7 @@ export default function MealSection({
               <tbody>
                 {items.map((item, idx) => (
                   <ItemRow
-                    key={idx}
+                    key={getRowKey(item)}
                     idx={idx}
                     name={item.name}
                     amount={item.amount}
@@ -159,10 +169,9 @@ export default function MealSection({
           {addOpen && (
             <AddFoodPanel
               customFoods={customFoods}
-              personWeekMeals={personWeekMeals}
+              historyMealSources={historyMealSources}
               familyDayMeals={familyDayMeals}
               currentPersonName={currentPersonName}
-              currentDayOfWeek={currentDayOfWeek}
               mealType={meal.meal_type}
               onAdd={(item) => {
                 onAddItem(item)

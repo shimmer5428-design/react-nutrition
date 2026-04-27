@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPersons, getFoods, getWeekPlans, upsertWeekPlan, getAllPersonsWeekData } from '../api/db'
-import type { Person, DayPlan, FoodItem, Meal, WeekPlanRow } from '../api/types'
+import type { Person, DayPlan, FoodItem, Meal, MealHistorySource, WeekPlanRow } from '../api/types'
 import { DAY_NAMES, MEAL_TYPES } from '../api/types'
 import {
   getMacroTargets,
@@ -33,6 +33,54 @@ const MEAL_LAYOUT: { key: string; label: string; span: 1 | 2 }[] = [
   { key: 'dinner', label: '晚餐', span: 2 },
 ]
 
+function parseIsoWeekId(weekId: string): { year: number; week: number } | null {
+  const match = weekId.match(/^(\d{4})-W(\d{2})$/)
+  if (!match) return null
+  return { year: parseInt(match[1]), week: parseInt(match[2]) }
+}
+
+function isoWeekMonday(year: number, week: number): Date {
+  const jan4 = new Date(Date.UTC(year, 0, 4))
+  const jan4Day = jan4.getUTCDay() || 7
+  const monday = new Date(jan4)
+  monday.setUTCDate(jan4.getUTCDate() - jan4Day + 1 + (week - 1) * 7)
+  return monday
+}
+
+function dateToIsoWeekId(date: Date): string {
+  const d = new Date(date)
+  d.setUTCHours(0, 0, 0, 0)
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
+}
+
+function dateToDayOfWeek(date: Date): number {
+  return (date.getUTCDay() || 7) - 1
+}
+
+function getHistoryDayRefs(weekId: string, dayOfWeek: number): { weekId: string; dayOfWeek: number }[] {
+  const parsed = parseIsoWeekId(weekId)
+  if (!parsed || dayOfWeek < 0 || dayOfWeek > 6) {
+    return [dayOfWeek - 1, dayOfWeek - 2, dayOfWeek - 3]
+      .filter((day) => day >= 0)
+      .map((day) => ({ weekId, dayOfWeek: day }))
+  }
+
+  const currentDate = isoWeekMonday(parsed.year, parsed.week)
+  currentDate.setUTCDate(currentDate.getUTCDate() + dayOfWeek)
+
+  return [1, 2, 3].map((offset) => {
+    const historyDate = new Date(currentDate)
+    historyDate.setUTCDate(currentDate.getUTCDate() - offset)
+    return {
+      weekId: dateToIsoWeekId(historyDate),
+      dayOfWeek: dateToDayOfWeek(historyDate),
+    }
+  })
+}
+
 export default function DayEditorPage() {
   const { weekId, personName: encodedPersonName, dayOfWeek: dayStr } = useParams<{
     weekId: string
@@ -46,7 +94,7 @@ export default function DayEditorPage() {
   const [person, setPerson] = useState<Person | null>(null)
   const [dayPlan, setDayPlan] = useState<DayPlan>(emptyDayPlan(personName, dayOfWeek))
   const [customFoods, setCustomFoods] = useState<FoodItem[]>([])
-  const [personWeekData, setPersonWeekData] = useState<WeekPlanRow[]>([])
+  const [historyMealSources, setHistoryMealSources] = useState<MealHistorySource[]>([])
   const [allWeekData, setAllWeekData] = useState<WeekPlanRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'dirty' | 'saving' | 'saved'>('idle')
@@ -58,25 +106,42 @@ export default function DayEditorPage() {
     if (!weekId || !personName) return
     setLoading(true)
     setError(null)
+    const historyDayRefs = getHistoryDayRefs(weekId, dayOfWeek)
+    const historyWeekIds = Array.from(
+      new Set(historyDayRefs.map((ref) => ref.weekId).filter((id) => id !== weekId))
+    )
 
-    const [personsRes, foodsRes, planRes, allRes] = await Promise.all([
+    const [personsRes, foodsRes, planRes, allRes, ...historyWeekResults] = await Promise.all([
       getPersons(),
       getFoods(),
       getWeekPlans(personName, weekId),
       getAllPersonsWeekData(weekId),
+      ...historyWeekIds.map((historyWeekId) => getWeekPlans(personName, historyWeekId)),
     ])
 
     if (personsRes.error) { setError(personsRes.error); setLoading(false); return }
     if (foodsRes.error) { setError(foodsRes.error); setLoading(false); return }
     if (planRes.error) { setError(planRes.error); setLoading(false); return }
     if (allRes.error) { setError(allRes.error); setLoading(false); return }
+    const historyError = historyWeekResults.find((res) => res.error)?.error
+    if (historyError) { setError(historyError); setLoading(false); return }
 
     const foundPerson = personsRes.data.find((p) => p.name === personName)
     if (!foundPerson) { setError(`找不到人員：${personName}`); setLoading(false); return }
 
+    const historyRows = historyWeekResults.flatMap((res) => res.data)
+    const planRowsByDate = new Map<string, WeekPlanRow>()
+    for (const row of [...planRes.data, ...historyRows]) {
+      planRowsByDate.set(`${row.week_id}:${row.day_of_week}`, row)
+    }
+    const nextHistoryMealSources = historyDayRefs.flatMap((ref) => {
+      const row = planRowsByDate.get(`${ref.weekId}:${ref.dayOfWeek}`)
+      return row ? [{ weekId: ref.weekId, dayOfWeek: ref.dayOfWeek, meals: row.data.meals }] : []
+    })
+
     setPerson(foundPerson)
     setCustomFoods(foodsRes.data)
-    setPersonWeekData(planRes.data)
+    setHistoryMealSources(nextHistoryMealSources)
     setAllWeekData(allRes.data)
 
     const dayRow = planRes.data.find((r) => r.day_of_week === dayOfWeek)
@@ -178,14 +243,6 @@ export default function DayEditorPage() {
   const exerciseBonus = getExerciseMacroBonus(dayPlan)
   const exerciseKcal = dayPlan.exercise_kcal_burned ?? 0
 
-  // Build person week meals for history tab: dayOfWeek -> mealType -> Meal
-  const personWeekMeals: Record<number, Record<string, Meal>> = {}
-  for (const row of personWeekData) {
-    if (row.day_of_week !== dayOfWeek) {
-      personWeekMeals[row.day_of_week] = row.data.meals
-    }
-  }
-
   // Build family day meals for family tab
   const familyDayMeals: { personName: string; meals: Record<string, Meal> }[] = []
   for (const row of allWeekData) {
@@ -285,10 +342,9 @@ export default function DayEditorPage() {
               meal={dayPlan.meals[key] ?? { meal_type: key, items: [] }}
               suggestedKcal={getMealTargetCalories(person, dayPlan, key)}
               customFoods={customFoods}
-              personWeekMeals={personWeekMeals}
+              historyMealSources={historyMealSources}
               familyDayMeals={familyDayMeals}
               currentPersonName={personName}
-              currentDayOfWeek={dayOfWeek}
               onUpdateItemAmount={(itemIdx, newAmount) => handleUpdateItemAmount(key, itemIdx, newAmount)}
               onRemoveItem={(itemIdx) => handleRemoveItem(key, itemIdx)}
               onAddItem={(item) => handleAddItem(key, item)}

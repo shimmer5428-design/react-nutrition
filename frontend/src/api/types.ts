@@ -16,6 +16,12 @@ export interface Meal {
   items: FoodItem[]
 }
 
+export interface MealHistorySource {
+  weekId: string
+  dayOfWeek: number
+  meals: Record<string, Meal>
+}
+
 export interface DayPlan {
   person_name: string
   day_of_week: number // 0=Mon ... 6=Sun
