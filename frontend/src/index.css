@@ -151,6 +151,59 @@ input:focus, select:focus {
   box-shadow: 0 0 0 2px rgba(255,97,99,0.15);
 }
 
+.searchable-select {
+  position: relative;
+  width: 240px;
+  max-width: 100%;
+}
+
+.searchable-select input {
+  width: 100%;
+  padding-right: 28px;
+}
+
+.searchable-select-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #E55C50;
+}
+
+.searchable-select-options {
+  position: fixed;
+  z-index: 1000;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  background: white;
+  border: 1px solid #FFBBB0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(229,92,80,0.15);
+  font-size: 14px;
+}
+
+.searchable-select-options li {
+  padding: 8px 12px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.searchable-select-options li.active {
+  background: #FFE0DB;
+  color: #1E1E1E;
+}
+
+.searchable-select-options li[aria-selected="true"] {
+  font-weight: 600;
+}
+
+.searchable-select-options li.searchable-select-empty {
+  color: #888;
+  cursor: default;
+}
+
 /* ===================================================================
    Form Layout
    =================================================================== */

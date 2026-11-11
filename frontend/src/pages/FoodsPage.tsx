@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getFoods, upsertFood, deleteFood as deleteFoodApi } from '../api/db'
 import { FoodItem, FOOD_CATEGORIES } from '../api/types'
 import FoodTable from '../components/FoodTable'
+import SearchableSelect from '../components/SearchableSelect'
 
 const EMPTY_FOOD: FoodItem = {
   name: '',
@@ -84,14 +85,12 @@ export default function FoodsPage() {
             <label>Unit</label>
             <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
           </div>
-          <div className="form-group">
-            <label>Category</label>
-            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-              {FOOD_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            label="Category"
+            value={form.category}
+            onChange={value => setForm({ ...form, category: value })}
+            options={FOOD_CATEGORIES.map(c => ({ value: c, label: c }))}
+          />
         </div>
         <div className="form-row">
           <div className="form-group">

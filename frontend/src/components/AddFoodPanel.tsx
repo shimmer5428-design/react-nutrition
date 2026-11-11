@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { FoodItem, Meal, MealHistorySource } from '../api/types'
 import { BUILTIN_FOODS, CATEGORY_LABELS, getFoodsByCategory } from '../api/foodDatabase'
 import { analyzeFood } from '../api/gemini'
+import SearchableSelect from './SearchableSelect'
 
 interface Props {
   customFoods: FoodItem[]
@@ -189,23 +190,20 @@ export default function AddFoodPanel({
       {tab === 'builtin' && (
         <div className="add-food-tab-content">
           <div className="add-food-row">
-            <div className="form-group">
-              <label>分類</label>
-              <select value={category} onChange={(e) => { setCategory(e.target.value); setSelectedFood('') }}>
-                {categoryKeys.map((c) => (
-                  <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>食材</label>
-              <select value={selectedFood} onChange={(e) => { setSelectedFood(e.target.value); const f = BUILTIN_FOODS.find(x => x.name === e.target.value); if (f) setQty(f.amount) }}>
-                <option value="">選擇食材...</option>
-                {filteredFoods.map((f) => (
-                  <option key={f.name} value={f.name}>{f.name}</option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              label="分類"
+              value={category}
+              onChange={value => { setCategory(value); setSelectedFood('') }}
+              options={categoryKeys.map(c => ({ value: c, label: CATEGORY_LABELS[c] }))}
+            />
+            <SearchableSelect
+              key={category}
+              label="食材"
+              value={selectedFood}
+              placeholder="選擇食材..."
+              onChange={value => { setSelectedFood(value); const f = BUILTIN_FOODS.find(x => x.name === value); if (f) setQty(f.amount) }}
+              options={[{ value: '', label: '選擇食材...' }, ...filteredFoods.map(f => ({ value: f.name, label: f.name }))]}
+            />
           </div>
 
           {chosen && (
@@ -238,15 +236,13 @@ export default function AddFoodPanel({
           ) : (
             <>
               <div className="add-food-row">
-                <div className="form-group">
-                  <label>自訂食材</label>
-                  <select value={customSelected} onChange={(e) => { setCustomSelected(e.target.value); const f = customFoods.find(x => x.name === e.target.value); if (f) setCustomQty(f.amount) }}>
-                    <option value="">選擇食材...</option>
-                    {customFoods.map((f) => (
-                      <option key={f.name} value={f.name}>{f.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <SearchableSelect
+                  label="自訂食材"
+                  value={customSelected}
+                  placeholder="選擇食材..."
+                  onChange={value => { setCustomSelected(value); const f = customFoods.find(x => x.name === value); if (f) setCustomQty(f.amount) }}
+                  options={[{ value: '', label: '選擇食材...' }, ...customFoods.map(f => ({ value: f.name, label: f.name }))]}
+                />
               </div>
               {chosenCustom && (
                 <div className="add-food-detail">

@@ -1,4 +1,5 @@
 import { Person } from '../api/types'
+import SearchableSelect from './SearchableSelect'
 
 interface Props {
   persons: Person[]
@@ -8,17 +9,12 @@ interface Props {
 
 export default function PersonSelector({ persons, selected, onSelect }: Props) {
   return (
-    <div className="form-group">
-      <label>Person</label>
-      <select
-        value={selected ?? ''}
-        onChange={(e) => onSelect(e.target.value)}
-      >
-        <option value="" disabled>Select a person...</option>
-        {persons.map((p) => (
-          <option key={p.name} value={p.name}>{p.name}</option>
-        ))}
-      </select>
-    </div>
+    <SearchableSelect
+      label="Person"
+      value={selected ?? ''}
+      onChange={onSelect}
+      placeholder="Select a person..."
+      options={persons.map(p => ({ value: p.name, label: p.name }))}
+    />
   )
 }

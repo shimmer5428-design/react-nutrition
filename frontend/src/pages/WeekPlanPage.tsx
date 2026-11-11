@@ -3,6 +3,7 @@ import { getPersons, getFoods, getWeekPlans, upsertWeekPlanBatch } from '../api/
 import { Person, DayPlan, FoodItem, MEAL_TYPES } from '../api/types'
 import PersonSelector from '../components/PersonSelector'
 import WeekPlanGrid from '../components/WeekPlanGrid'
+import SearchableSelect from '../components/SearchableSelect'
 
 function currentWeekId(): string {
   // ISO 8601: week 1 = week containing first Thursday; weeks start on Monday
@@ -199,15 +200,15 @@ export default function WeekPlanPage() {
                 ))}
               </select>
             </div>
-            <div className="form-group">
-              <label>Food</label>
-              <select value={addFoodName} onChange={(e) => setAddFoodName(e.target.value)}>
-                <option value="">Select food...</option>
-                {foods.map((f) => (
-                  <option key={f.name} value={f.name}>{f.name} ({f.calories} cal / {f.amount}{f.unit})</option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              label="Food"
+              value={addFoodName}
+              onChange={setAddFoodName}
+              placeholder="Select food..."
+              options={[{ value: '', label: 'Select food...' }, ...foods.map(f => ({
+                value: f.name, label: `${f.name} (${f.calories} cal / ${f.amount}${f.unit})`,
+              }))]}
+            />
             <div className="form-group">
               <label>Amount</label>
               <input type="number" value={addAmount} onChange={(e) => setAddAmount(+e.target.value)} style={{ width: 80 }} />

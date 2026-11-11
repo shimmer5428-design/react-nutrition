@@ -22,6 +22,18 @@ npm run dev
 
 Runs on http://localhost:5173.
 
+Searchable menus for people, foods, and food categories support case-insensitive
+substring matching on labels and stored values. Use Up/Down and Enter to select,
+or Escape/Tab to discard unconfirmed input. Only listed options update form values.
+
+Run the frontend interaction tests and production build:
+
+```bash
+cd frontend
+npm test
+npm run build
+```
+
 ## Supabase Tables
 
 - `persons` - name (PK), data (JSONB)
